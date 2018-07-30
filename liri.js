@@ -5,6 +5,7 @@ const request = require('request');
 const Spotify = require("node-spotify-api");
 const Twitter = require("twitter");
 const terminalImage = require('terminal-image');
+var fs = require('fs');
 var inquirer = require('inquirer');
 
 var spotify = new Spotify(keys.spotify);
@@ -40,50 +41,69 @@ function getAlbumPoster(imgUrl) {
 }
 
 function getSong(searchQuery) {
-    spotify.search({type: 'track', query: searchQuery, limit: 20}, function(err, data) {
-        if (err) {
-            return console.log("Error");
-        }
-        var tracks = [];
-        var trackFetcher = new Promise((resolve, reject) => {
-            for(var track of data.tracks.items)
-            {
-                var trackData = {
-                    name : track.artists[0].name + " | " + track.name,
-                    value : {
-                        name: track.name,
-                        album: track.album.name,
-                        artist: track.artists[0].name,
-                        img: track.album.images[0].url,
-                    }
-                }
-                tracks.push(trackData);
-                resolve(tracks);
+    if (searchQuery === 'The Sign') {
+        spotify
+        .request('https://api.spotify.com/v1/tracks/3DYVWvPh3kGwPasp7yjahc')
+        .then(function(data) {
+            getAlbumPoster(data.album.images[0].url);
+            setTimeout(function() {
+               console.log('******************************************');
+               console.log("Track: " + data.name);
+               console.log("Album: " + data.album.name);
+               console.log("Artist: " + data.artists[0].name);
+            }, 2000);
+        })
+        .catch(function(err) {
+          console.error('Error occurred: ' + err); 
+        });
+    }
+    else {
+        spotify.search({type: 'track', query: searchQuery, limit: 20}, function(err, data) {
+            if (err) {
+                return console.log("Error");
             }
-        });
-
-        trackFetcher.then((tracks) => {
-            inquirer.prompt([
+            var tracks = [];
+            var trackFetcher = new Promise((resolve, reject) => {
+                for(var track of data.tracks.items)
                 {
-                  type: 'list',
-                  message: 'Which One?',
-                  choices: tracks,
-                  name: "track"
-              }]).then(function(selected) {
-                 getAlbumPoster(selected.track.img);
-                
-
-                 setTimeout(function() {
-                    console.log('******************************************');
-                    console.log("Track: " + selected.track.name);
-                    console.log("Album: " + selected.track.album);
-                    console.log("Artist: " + selected.track.artist);
-                 }, 2000);
-
+                    var trackData = {
+                        name : track.artists[0].name + " | " + track.name,
+                        value : {
+                            name: track.name,
+                            album: track.album.name,
+                            artist: track.artists[0].name,
+                            img: track.album.images[0].url,
+                        }
+                    }
+                    tracks.push(trackData);
+                    resolve(tracks);
+                }
             });
+    
+            trackFetcher.then((tracks) => {
+                inquirer.prompt([
+                    {
+                      type: 'list',
+                      message: 'Which One?',
+                      choices: tracks,
+                      name: "track"
+                  }]).then(function(selected) {
+                     getAlbumPoster(selected.track.img);
+                    
+    
+                     setTimeout(function() {
+                        console.log('******************************************');
+                        console.log("Track: " + selected.track.name);
+                        console.log("Album: " + selected.track.album);
+                        console.log("Artist: " + selected.track.artist);
+                     }, 2000);
+    
+                });
+            });
+    
         });
+    }
 
-    });
 };
 
 function getMovie(query) {
@@ -148,19 +168,36 @@ function getMovie(query) {
 
 };
 
+function writeLog(data) {
+    fs.appendFile('./logs.txt',data + " " + Date() + '\r\n', (err) => {
+        if (err) throw err;
+    });
+}
+
 
 
 if (process.argv[2] === 'my-tweets') {
     getTweets();
+    writeLog(process.argv[2]);
 }
 else if (process.argv[2] === 'spotify-this-song') {
-    var count = 3;
-    var songname = "";
-    while (process.argv[count] !== undefined) {
-        songname += " " + process.argv[count];
-        count++;
+    if (process.argv[3] === undefined) {
+        var songname = 'The Sign';
+        getSong(songname.trim());
+        writeLog(process.argv[2] + " " + songname);
     }
-    getSong(songname.trim());
+
+    else {
+        var count = 3;
+        var songname = "";
+        while (process.argv[count] !== undefined) {
+            songname += " " + process.argv[count];
+            count++;
+        }
+        writeLog(process.argv[2] + " " + songname);
+        getSong(songname.trim());
+    };
+
     
 }
 else if (process.argv[2] === 'movie-this') {
@@ -170,17 +207,34 @@ else if (process.argv[2] === 'movie-this') {
         moviename += " " + process.argv[count];
         count++;
     }
+    writeLog(process.argv[2] + moviename);
     getMovie(moviename.trim());
 }
 else if (process.argv[2] === 'do-what-it-says') {
-    console.log('Random');
+        fs.readFile('./random.txt', function read(err, data) {
+            if (err) {
+                throw err;
+            }
+            var lines = data.toString().split('\n');
+            var random = lines[Math.floor(Math.random()*lines.length)];
+            var split = random.split(',');
+            if (split[0] === 'movie-this') {
+                getMovie(split[1].trim());
+            }
+            else if (split[0] === 'spotify-this-song') {
+                getSong(split[1].trim());
+            }
+            else {
+                console.log("Command isn't supported.");
+            }
+            
+            writeLog(process.argv[2] + " " + split[1].trim() + " " + split[1].trim());
+        });
 }
 else {
+    writeLog(process.argv[2]);
     console.log('Wrong entry');
 };
-
-
-
 
 
 
