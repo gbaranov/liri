@@ -1,0 +1,31 @@
+{
+  "name": "liri",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gbaranov/liri.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gbaranov/liri/issues"
+  },
+  "homepage": "https://github.com/gbaranov/liri#readme",
+  "dependencies": {
+    "console-png": "^1.2.1",
+    "dotenv": "^6.0.0",
+    "inquirer": "^6.0.0",
+    "jpeg-js": "^0.3.4",
+    "node-spotify-api": "^1.0.7",
+    "request": "^2.87.0",
+    "term-img": "^2.1.0",
+    "terminal-image": "^0.1.1",
+    "twitter": "^1.7.1"
+  }
+}
